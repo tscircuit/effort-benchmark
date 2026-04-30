@@ -11,7 +11,6 @@ export type RouteQualityMetrics = {
   hardDrcErrorCount: number
   softDrcErrorCount: number
   viaCount: number
-  layerChangeCount: number
   bendCount: number
   totalLength: number
   penalty: number
@@ -60,7 +59,6 @@ export type EffortComparisonRecord = {
   hardDrcDelta: number | null
   softDrcDelta: number | null
   viaDelta: number | null
-  layerChangeDelta: number | null
   bendDelta: number | null
   totalLengthDelta: number | null
   elapsedTimeDeltaMs: number

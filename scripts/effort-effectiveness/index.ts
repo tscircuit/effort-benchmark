@@ -524,10 +524,6 @@ const createComparisonRecord = (
     baselineQuality && candidateQuality
       ? candidateQuality.viaCount - baselineQuality.viaCount
       : null
-  const layerChangeDelta =
-    baselineQuality && candidateQuality
-      ? candidateQuality.layerChangeCount - baselineQuality.layerChangeCount
-      : null
   const bendDelta =
     baselineQuality && candidateQuality
       ? candidateQuality.bendCount - baselineQuality.bendCount
@@ -568,7 +564,6 @@ const createComparisonRecord = (
     hardDrcDelta,
     softDrcDelta,
     viaDelta,
-    layerChangeDelta,
     bendDelta,
     totalLengthDelta,
     elapsedTimeDeltaMs: candidateResult.elapsedTimeMs - baselineResult.elapsedTimeMs,

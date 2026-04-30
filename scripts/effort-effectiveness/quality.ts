@@ -21,13 +21,12 @@ export const ROUTE_QUALITY_WEIGHTS = {
   hardDrcErrorCount: 10_000,
   softDrcErrorCount: 50,
   viaCount: 12,
-  layerChangeCount: 4,
   bendCount: 1,
   totalLength: 0.25,
 } as const
 
 export const ROUTE_QUALITY_FORMULA =
-  "penalty = hardDrcErrorCount*10000 + softDrcErrorCount*50 + viaCount*12 + layerChangeCount*4 + bendCount + totalLength*0.25 (lower is better)"
+  "penalty = hardDrcErrorCount*10000 + softDrcErrorCount*50 + viaCount*12 + bendCount + totalLength*0.25 (lower is better)"
 
 const getDrcErrorCount = (
   circuitJson: CircuitJson,
@@ -63,18 +62,6 @@ const getSegmentPoint = (segment: RouteSegment) => {
   return null
 }
 
-const getSegmentLayer = (segment: RouteSegment) => {
-  if (segment.route_type === "wire") {
-    return segment.layer
-  }
-
-  if ("to_layer" in segment) {
-    return segment.to_layer
-  }
-
-  return null
-}
-
 const countViaSegments = (srj: SimpleRouteJson) =>
   (srj.traces ?? []).flatMap((trace: SimplifiedPcbTrace) =>
     trace.route.filter(
@@ -86,27 +73,6 @@ const countViaSegments = (srj: SimpleRouteJson) =>
       > => segment.route_type === "via",
     ),
   ).length
-
-const countLayerChanges = (srj: SimpleRouteJson) => {
-  let layerChanges = 0
-
-  for (const trace of srj.traces ?? []) {
-    for (let i = 1; i < trace.route.length; i++) {
-      const previousLayer = getSegmentLayer(trace.route[i - 1])
-      const currentLayer = getSegmentLayer(trace.route[i])
-
-      if (
-        previousLayer !== null &&
-        currentLayer !== null &&
-        previousLayer !== currentLayer
-      ) {
-        layerChanges += 1
-      }
-    }
-  }
-
-  return layerChanges
-}
 
 const countBends = (srj: SimpleRouteJson) => {
   let bends = 0
@@ -171,7 +137,6 @@ export const formatRouteQualityBreakdown = (
     `hardDrc=${metrics.hardDrcErrorCount}`,
     `softDrc=${metrics.softDrcErrorCount}`,
     `vias=${metrics.viaCount}`,
-    `layerChanges=${metrics.layerChangeCount}`,
     `bends=${metrics.bendCount}`,
     `length=${metrics.totalLength.toFixed(1)}`,
   ].join(", ")
@@ -196,7 +161,6 @@ export const computeRouteQualityMetrics = (
     viaClearance: PREFERRED_VIA_CLEARANCE,
   })
   const viaCount = countViaSegments(scoredSrj)
-  const layerChangeCount = countLayerChanges(scoredSrj)
   const bendCount = countBends(scoredSrj)
   const totalLength = getTotalLength(scoredSrj)
 
@@ -204,14 +168,12 @@ export const computeRouteQualityMetrics = (
     hardDrcErrorCount,
     softDrcErrorCount,
     viaCount,
-    layerChangeCount,
     bendCount,
     totalLength,
     penalty:
       hardDrcErrorCount * ROUTE_QUALITY_WEIGHTS.hardDrcErrorCount +
       softDrcErrorCount * ROUTE_QUALITY_WEIGHTS.softDrcErrorCount +
       viaCount * ROUTE_QUALITY_WEIGHTS.viaCount +
-      layerChangeCount * ROUTE_QUALITY_WEIGHTS.layerChangeCount +
       bendCount * ROUTE_QUALITY_WEIGHTS.bendCount +
       totalLength * ROUTE_QUALITY_WEIGHTS.totalLength,
   }
