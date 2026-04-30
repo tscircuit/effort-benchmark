@@ -1,0 +1,4 @@
+node_modules
+bun.lock
+benchmark-effort-effectiveness.txt
+benchmark-effort-effectiveness.json

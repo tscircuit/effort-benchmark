@@ -1,0 +1,21 @@
+{
+  "name": "efforct-benchamrk",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "benchmark": "./benchmark.sh",
+    "check": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@tscircuit/autorouting-dataset-01": "^1.0.32",
+    "@tscircuit/capacity-autorouter": "^0.0.482",
+    "@tscircuit/circuit-json-util": "^0.0.94",
+    "@tscircuit/checks": "^0.0.125",
+    "circuit-json": "^0.0.371"
+  },
+  "devDependencies": {
+    "@types/bun": "^1.3.13",
+    "typescript": "^5.9.3"
+  }
+}
