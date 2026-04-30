@@ -15,7 +15,5 @@ export const ALL_SOLVER_NAMES = [
   "AutoroutingPipelineSolver6_PolyHypergraph"
 ] as const
 
-export const getSolverNames = (excludeAssignable: boolean): string[] =>
-  excludeAssignable
-    ? ALL_SOLVER_NAMES.filter((name) => !name.includes("Assignable"))
-    : [...ALL_SOLVER_NAMES]
+export const getSolverNames = (): string[] =>
+  ALL_SOLVER_NAMES.filter((name) => !name.includes("Assignable"))

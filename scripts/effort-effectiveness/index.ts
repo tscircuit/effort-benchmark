@@ -27,8 +27,6 @@ type EffortBenchmarkOptions = {
   scenarioLimit?: number
   concurrency: number
   compareEfforts: [number, number]
-  sampleTimeoutMs?: number
-  includeAssignable: boolean
 }
 
 type WorkerTaskAssignment = {
@@ -63,22 +61,6 @@ const formatTime = (timeMs: number | null) => {
 const formatDurationLabel = (timeMs: number) =>
   timeMs < 1000 ? `${timeMs}ms` : formatTime(timeMs)
 
-const parseDurationArg = (rawValue: string, flagName: string) => {
-  const value = rawValue.trim()
-  const match = value.match(/^(\d+)(ms|s|m)?$/)
-  if (!match) {
-    throw new Error(
-      `${flagName} must be an integer with optional ms, s, or m suffix`,
-    )
-  }
-
-  const amount = Number.parseInt(match[1], 10)
-  const unit = match[2] ?? "ms"
-  const multiplier = unit === "m" ? 60_000 : unit === "s" ? 1_000 : 1
-
-  return amount * multiplier
-}
-
 const parseCompareEffortsArg = (rawValue: string): [number, number] => {
   const parts = rawValue
     .split(",")
@@ -107,7 +89,6 @@ const parseArgs = (): EffortBenchmarkOptions => {
   const options: EffortBenchmarkOptions = {
     concurrency: defaultConcurrency,
     compareEfforts: [1, 20],
-    includeAssignable: false,
   }
 
   for (let i = 0; i < args.length; i += 1) {
@@ -135,18 +116,6 @@ const parseArgs = (): EffortBenchmarkOptions => {
     if (arg === "--compare-efforts") {
       options.compareEfforts = parseCompareEffortsArg(args[i + 1] ?? "")
       i += 1
-      continue
-    }
-    if (arg === "--sample-timeout") {
-      options.sampleTimeoutMs = parseDurationArg(
-        args[i + 1] ?? "",
-        "--sample-timeout",
-      )
-      i += 1
-      continue
-    }
-    if (arg === "--include-assignable") {
-      options.includeAssignable = true
       continue
     }
 
@@ -339,9 +308,7 @@ const createFailedResult = (
 
 const getTaskTimeoutMs = (
   task: EffortBenchmarkTask,
-  sampleTimeoutMs?: number,
 ) => {
-  if (sampleTimeoutMs !== undefined) return sampleTimeoutMs
   const baseTimeoutMs = getTaskTimeoutPerEffortMs()
   return baseTimeoutMs + baseTimeoutMs * task.effort
 }
@@ -349,10 +316,9 @@ const getTaskTimeoutMs = (
 const executeTaskOnWorker = (
   slot: WorkerSlot,
   request: EffortWorkerTaskMessage,
-  sampleTimeoutMs?: number,
 ): Promise<WorkerExecutionResult> =>
   new Promise((resolve) => {
-    const taskTimeoutMs = getTaskTimeoutMs(request.task, sampleTimeoutMs)
+    const taskTimeoutMs = getTaskTimeoutMs(request.task)
     const startedAtMs = performance.now()
     let settled = false
 
@@ -451,7 +417,6 @@ const executeTaskOnWorker = (
 const runTasks = async (
   tasks: EffortBenchmarkTask[],
   concurrency: number,
-  sampleTimeoutMs?: number,
 ) => {
   const workerCount = Math.min(concurrency, tasks.length)
   const heartbeatIntervalMs = getHeartbeatIntervalMs()
@@ -497,7 +462,6 @@ const runTasks = async (
       const { result, restartWorker } = await executeTaskOnWorker(
         slot,
         request,
-        sampleTimeoutMs,
       )
       results[request.taskId - 1] = result
       completedTaskCount += 1
@@ -684,12 +648,10 @@ const main = async () => {
     scenarioLimit,
     concurrency,
     compareEfforts,
-    sampleTimeoutMs,
-    includeAssignable,
   } = parseArgs()
   const datasetName = "dataset01"
   const [baselineEffort, candidateEffort] = compareEfforts
-  const availableSolvers = getSolverNames(!includeAssignable)
+  const availableSolvers = getSolverNames()
   const solvers =
     solverName && solverName !== "all" ? [solverName] : availableSolvers
 
@@ -723,7 +685,7 @@ const main = async () => {
   )
   console.log(`Board quality formula: ${ROUTE_QUALITY_FORMULA}`)
 
-  const runs = await runTasks(tasks, concurrency, sampleTimeoutMs)
+  const runs = await runTasks(tasks, concurrency)
   const comparisons = solvers.flatMap((solver) => {
     const resultByScenarioAndEffort = new Map<string, EffortWorkerResult>()
     for (const run of runs.filter((result) => result.solverName === solver)) {
