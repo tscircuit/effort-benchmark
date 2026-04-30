@@ -3,7 +3,8 @@ set -euo pipefail
 
 SOLVER_NAME=""
 SCENARIO_LIMIT=""
-COMPARE_EFFORTS="1,20"
+DEFAULT_COMPARE_EFFORTS="1,20"
+COMPARE_EFFORTS="$DEFAULT_COMPARE_EFFORTS"
 DEFAULT_SOLVER_NAME="AutoroutingPipelineSolver4"
 
 default_concurrency() {
@@ -15,9 +16,11 @@ CONCURRENCY="${BENCHMARK_CONCURRENCY:-$(default_concurrency)}"
 print_help() {
   cat <<'EOF'
 Usage:
+  ./benchmark.sh [A,B] [--solver NAME|all] [--scenario-limit N] [--concurrency N]
   ./benchmark.sh [--solver NAME|all] [--scenario-limit N] [--concurrency N] [--compare-efforts A,B]
 
 Options:
+  A,B                  Compare two effort values such as 1,20
   --solver NAME        Run only one solver, or use "all"
   --scenario-limit N   Run only first N scenarios
   --concurrency N      Number of workers, or "auto"
@@ -26,12 +29,17 @@ Options:
   -h, --help           Show this help
 
 Examples:
-  ./benchmark.sh
-  ./benchmark.sh --solver AutoroutingPipelineSolver4
-  ./benchmark.sh --solver all --scenario-limit 20
-  ./benchmark.sh --solver AutoroutingPipelineSolver4 --compare-efforts 1,20
+  ./benchmark.sh 1,20
+  ./benchmark.sh 1,20 --solver AutoroutingPipelineSolver4
+  ./benchmark.sh 1,20 --solver all --scenario-limit 20
+  ./benchmark.sh --compare-efforts 1,20 --solver AutoroutingPipelineSolver4
 EOF
 }
+
+if [ "${1:-}" != "" ] && [[ "${1}" != --* ]]; then
+  COMPARE_EFFORTS="$1"
+  shift
+fi
 
 while [ "$#" -gt 0 ]; do
   case "$1" in
